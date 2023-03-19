@@ -91,7 +91,9 @@ public class Neko : MonoBehaviour
     }
     void ChangeAnimationState(string newState)
     {
+        if(currentState == newState) return;//tránh Animation t? phá chính nó
         animator.Play(newState);
+        currentState= newState;//thay newState vào
     }
 
 }
