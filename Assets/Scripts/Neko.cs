@@ -12,6 +12,9 @@ public class Neko : MonoBehaviour
     public float maxHP;
     public float maxStamina;
 
+    Animator animator;
+    private string currentState;
+
     private SpriteRenderer spriteRenderer;
 
     public Rigidbody2D myBD;
@@ -21,6 +24,7 @@ public class Neko : MonoBehaviour
         myBD= GetComponent<Rigidbody2D>();  
         hp=maxHP; stamina=maxStamina;
         spriteRenderer=GetComponent<SpriteRenderer>();
+        animator=GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -84,6 +88,10 @@ public class Neko : MonoBehaviour
             hp += 5;
             hp = Mathf.Clamp(hp, 0, maxHP);
         }
+    }
+    void ChangeAnimationState(string newState)
+    {
+        animator.Play(newState);
     }
 
 }
