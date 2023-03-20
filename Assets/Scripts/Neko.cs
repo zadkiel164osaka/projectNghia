@@ -1,5 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Neko : MonoBehaviour
@@ -12,8 +14,26 @@ public class Neko : MonoBehaviour
     public float maxHP;
     public float maxStamina;
 
+    public float timeBtwAttack;
+    public float startTimeBtwAttack;
+
     Animator animator;
     private string currentState;
+
+    bool isDead;
+    bool isAttackPressed;
+    bool isAttacking = false;
+    public Transform attackPos;
+    public float attackRange;
+    public LayerMask enemiesLayer;
+    public int damage;
+
+    //Animation State
+    const string NEKO_IDLE = "idle";
+    const string NEKO_WALK = "walk";
+    const string NEKO_RUN = "run";
+    const string NEKO_ATTACK = "attack";
+    const string NEKO_DEAD = "dead";
 
     private SpriteRenderer spriteRenderer;
 
@@ -31,12 +51,17 @@ public class Neko : MonoBehaviour
     void Update()
     {
         CheckInput();
+        NekoAttack();
+        //CheckAttackAnim();
+        CheckRotation();
+        NekoDead();
+        HealthConsume();
     }
     private void FixedUpdate()
     {
         Move();
         Run();
-        HealthConsume();
+        
     }
     void CheckInput()
     {
@@ -52,17 +77,36 @@ public class Neko : MonoBehaviour
 
     void Move()
     {
-        myBD.velocity = new Vector2(moveDirection.x * tempSpeed, moveDirection.y * tempSpeed);
-        Debug.Log(myBD.velocity);
-        if (myBD.velocity.x < 0)
+        if (isDead == false)
         {
-            this.transform.rotation = Quaternion.Euler(0, 180, 0);
-           // anim.Play("Walk");
-        }
-        else if (myBD.velocity.x > 0)
-        {
-            this.transform.rotation = Quaternion.Euler(0, 0, 0);
-         //   anim.Play("Walk");
+            myBD.velocity = new Vector2(moveDirection.x * tempSpeed, moveDirection.y * tempSpeed);
+            Debug.Log(myBD.velocity);
+            if (myBD.velocity.x < 0 && myBD.velocity.x >= -8)
+            {
+                ChangeAnimationState(NEKO_WALK);
+                //this.transform.rotation = Quaternion.Euler(0, 180, 0);
+            }
+            else if (myBD.velocity.x > 0 && myBD.velocity.x <= 8)
+            {
+                ChangeAnimationState(NEKO_WALK);
+                //this.transform.rotation = Quaternion.Euler(0, 0, 0);
+            }
+            if (myBD.velocity.y > 0 && myBD.velocity.y <= 8)
+            {
+                ChangeAnimationState(NEKO_WALK);
+            }
+            if (myBD.velocity.y < 0 && myBD.velocity.y >= -8)
+            {
+                ChangeAnimationState(NEKO_WALK);
+            }
+            else if (myBD.velocity.x == 0 && myBD.velocity.y == 0)
+            {
+                ChangeAnimationState(NEKO_IDLE);
+            }
+            if (myBD.velocity.x > 8 || myBD.velocity.x < -8 || myBD.velocity.y > 8 || myBD.velocity.y < -8)
+            {
+                ChangeAnimationState(NEKO_RUN);
+            }
         }
     }
     void Run()
@@ -71,10 +115,12 @@ public class Neko : MonoBehaviour
         {
             tempSpeed = runSpeed;
             //Debug.Log("Running");
+          //  ChangeAnimationState(NEKO_RUN);
         }
         else
         {
             tempSpeed = moveSpeed;
+          //  ChangeAnimationState(NEKO_WALK);
         }
     }
     void HealthConsume()
@@ -83,7 +129,7 @@ public class Neko : MonoBehaviour
         {
             hp -= 0.05f;
         }
-        if(Input.GetKeyDown(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Backspace))
         {
             hp += 5;
             hp = Mathf.Clamp(hp, 0, maxHP);
@@ -91,9 +137,64 @@ public class Neko : MonoBehaviour
     }
     void ChangeAnimationState(string newState)
     {
-        if(currentState == newState) return;//tr�nh Animation t? ph� ch�nh n�
+        if(currentState == newState) return;//tránh Animation tự phá chính nó
         animator.Play(newState);
-        currentState= newState;//thay newState v�o
+        currentState= newState;//thay newState vào 
+    }
+    void CheckRotation()
+    {
+        if(myBD.velocity.x>0)
+        {
+            transform.rotation = Quaternion.Euler(0, 0, 0);
+        }
+        if(myBD.velocity.x<0)
+        {
+            transform.rotation = Quaternion.Euler(0, 180, 0);
+        }
+
+    }
+    void NekoDead()
+    {
+        if(hp<=0)
+        {
+            myBD.bodyType = RigidbodyType2D.Static;
+            isDead= true;
+            ChangeAnimationState(NEKO_DEAD);
+        }
     }
 
+   void NekoAttack()
+    {
+        if(timeBtwAttack<=0)
+        {
+            timeBtwAttack = startTimeBtwAttack;
+            if(Input.GetKey(KeyCode.Space))
+            {
+                ChangeAnimationState(NEKO_ATTACK);
+                Collider2D[] enemies = Physics2D.OverlapCircleAll(attackPos.position,attackRange,enemiesLayer);
+                for (int i = 0; i < enemies.LongLength; i++)
+                {
+                    //enemies[i].GetComponent<Enemy>().TakeDamage(damage);
+                }      
+               // yield return new WaitForSeconds(1f);
+
+            }
+        }
+        else
+        {
+            timeBtwAttack -= Time.deltaTime;
+        }
+    }
+
+    //Hàm TakeDamge này cho vào script Enemy
+    void TakeDamage(int damage)
+    {       
+        hp -= damage;
+        Debug.Log("DamageTaken");
+    }
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(attackPos.position, attackRange);
+    }
 }
