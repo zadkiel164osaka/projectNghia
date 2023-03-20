@@ -13,6 +13,7 @@ public class Neko : MonoBehaviour
     public float stamina;
     public float maxHP;
     public float maxStamina;
+    public bool isStaminaLow = false;
 
     public float timeBtwAttack;
     public float startTimeBtwAttack;
@@ -56,11 +57,20 @@ public class Neko : MonoBehaviour
         CheckRotation();
         NekoDead();
         HealthConsume();
+        StaminaCheck();
     }
     private void FixedUpdate()
     {
         Move();
-        Run();
+        if (isStaminaLow==false)
+        {
+            Run();
+        }
+        else if(isStaminaLow)
+        {
+            tempSpeed = moveSpeed;
+        }
+
         
     }
     void CheckInput()
@@ -81,21 +91,21 @@ public class Neko : MonoBehaviour
         {
             myBD.velocity = new Vector2(moveDirection.x * tempSpeed, moveDirection.y * tempSpeed);
             Debug.Log(myBD.velocity);
-            if (myBD.velocity.x < 0 && myBD.velocity.x >= -8)
+            if (myBD.velocity.x < 0 && myBD.velocity.x >= -moveSpeed)
             {
                 ChangeAnimationState(NEKO_WALK);
                 //this.transform.rotation = Quaternion.Euler(0, 180, 0);
             }
-            else if (myBD.velocity.x > 0 && myBD.velocity.x <= 8)
+            else if (myBD.velocity.x > 0 && myBD.velocity.x <= moveSpeed)
             {
                 ChangeAnimationState(NEKO_WALK);
                 //this.transform.rotation = Quaternion.Euler(0, 0, 0);
             }
-            if (myBD.velocity.y > 0 && myBD.velocity.y <= 8)
+            if (myBD.velocity.y > 0 && myBD.velocity.y <= moveSpeed)
             {
                 ChangeAnimationState(NEKO_WALK);
             }
-            if (myBD.velocity.y < 0 && myBD.velocity.y >= -8)
+            if (myBD.velocity.y < 0 && myBD.velocity.y >= -moveSpeed)
             {
                 ChangeAnimationState(NEKO_WALK);
             }
@@ -103,7 +113,7 @@ public class Neko : MonoBehaviour
             {
                 ChangeAnimationState(NEKO_IDLE);
             }
-            if (myBD.velocity.x > 8 || myBD.velocity.x < -8 || myBD.velocity.y > 8 || myBD.velocity.y < -8)
+            if (myBD.velocity.x > moveSpeed || myBD.velocity.x < -moveSpeed || myBD.velocity.y > moveSpeed || myBD.velocity.y < -moveSpeed)
             {
                 ChangeAnimationState(NEKO_RUN);
             }
@@ -111,23 +121,26 @@ public class Neko : MonoBehaviour
     }
     void Run()
     {
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (isStaminaLow == false)
         {
-            tempSpeed = runSpeed;
-            //Debug.Log("Running");
-          //  ChangeAnimationState(NEKO_RUN);
-        }
-        else
-        {
-            tempSpeed = moveSpeed;
-          //  ChangeAnimationState(NEKO_WALK);
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                tempSpeed = runSpeed;
+                //Debug.Log("Running");
+                //  ChangeAnimationState(NEKO_RUN);
+            }
+            else
+            {
+                tempSpeed = moveSpeed;
+                //  ChangeAnimationState(NEKO_WALK);
+            }
         }
     }
     void HealthConsume()
     {
         if (hp >= 0)
         {
-            hp -= 0.05f;
+            hp -= 4f*Time.deltaTime;
         }
         if(Input.GetKeyDown(KeyCode.Backspace))
         {
@@ -196,5 +209,26 @@ public class Neko : MonoBehaviour
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(attackPos.position, attackRange);
+    }
+    void StaminaCheck()
+    {
+        if(currentState==NEKO_WALK || currentState == NEKO_IDLE)
+        {
+            stamina += 20 * Time.deltaTime;
+            stamina = Mathf.Clamp(stamina, 0, maxStamina);
+        }
+        if(currentState == NEKO_RUN)
+        {
+            stamina -= 40 * Time.deltaTime;
+            stamina = Mathf.Clamp(stamina, 0, maxStamina);
+        }
+        if (stamina <=10)
+        {
+            isStaminaLow = true;
+        }
+        else if(stamina>=30)
+        {
+            isStaminaLow = false;
+        }
     }
 }
